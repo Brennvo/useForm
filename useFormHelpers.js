@@ -1,20 +1,22 @@
 const isStringMinLength = (string, minCharacterLength = 0) => {
-  return string.length >= minCharacterLength
-}
+  return string.length >= minCharacterLength;
+};
 
 export const emptyObjectWithKeys = object => {
   return Object.keys(object).reduce((acc, curr) => {
-    acc[curr] = ""
-    return acc
-  }, {})
-}
+    acc[curr] = "";
+    return acc;
+  }, {});
+};
 
 export const validateInput = (
   input,
   inputValidationRules = {},
   referenceForm = {},
-  recurse = false
+  referenceValidation = {},
+  equalInput = {}
 ) => {
+  console.log("ref validation: ", referenceValidation);
   //console.log("oh hello again...", input)
   // Iterate over each input's validation rules
   return Object.keys(inputValidationRules).reduce(
@@ -24,45 +26,61 @@ export const validateInput = (
           acc[input.name][currValidationRule] = isStringMinLength(
             input.value,
             inputValidationRules[currValidationRule]
-          )
-          return acc
+          );
+          return {
+            ...equalInput,
+            ...acc
+          };
 
         case "equality":
           const isEqual =
-            referenceForm[inputValidationRules.equality] === input.value
-          // acc[currValidationRule] = isEqual
+            referenceForm[inputValidationRules.equality] === input.value;
 
-          acc[input.name][currValidationRule] = isEqual
-          if (isEqual && recurse) {
-            //console.log("recursing...")
-            validateInput(
+          acc[input.name][currValidationRule] = isEqual;
+
+          // Checking if the opposite input is not the current validation status of the one it should be equal to
+          if (
+            referenceValidation[inputValidationRules.equality].equality !==
+            isEqual
+          ) {
+            return validateInput(
               {
                 name: inputValidationRules.equality,
-                value: referenceForm[inputValidationRules.equality],
+                value: referenceForm[inputValidationRules.equality]
               },
-              inputValidationRules,
+              {
+                ...inputValidationRules,
+                equality: input.name // have to override the inputValidationRules with the name of the current input (since they are opposite and equal)
+              },
               referenceForm,
-              false
-            )
+              { ...referenceValidation, ...acc }, // update the current status of our inputs with the accumulated status
+              { ...acc }
+            );
           }
-          //console.log("acc: ", acc, input.name)
-          console.log("returning: ", acc)
-          return acc
+          return {
+            ...equalInput,
+            ...acc
+          };
 
         default:
-          return acc
+          return {
+            ...equalInput,
+            ...acc
+          };
       }
     },
-    { [input.name]: {} }
-  )
-}
+    {
+      [input.name]: {}
+    }
+  );
+};
 
 export const validateEntireForm = formValidation => {
   const isFormInvalid = Object.keys(formValidation)
     .map(inputName => {
-      return !Object.values(formValidation[inputName]).includes(false)
+      return !Object.values(formValidation[inputName]).includes(false);
     })
-    .includes(false)
+    .includes(false);
 
-  return !isFormInvalid
-}
+  return !isFormInvalid;
+};
