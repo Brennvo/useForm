@@ -16,8 +16,6 @@ export const validateInput = (
   referenceValidation = {},
   equalInput = {}
 ) => {
-  console.log("ref validation: ", referenceValidation);
-  //console.log("oh hello again...", input)
   // Iterate over each input's validation rules
   return Object.keys(inputValidationRules).reduce(
     (acc, currValidationRule) => {
