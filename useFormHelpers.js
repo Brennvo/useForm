@@ -73,6 +73,11 @@ export const validateInput = (
   );
 };
 
+/**
+ *
+ * @param {Object} formValidation - the form's validation status to be iterated through
+ * @return {Boolean} True/false as to the entire form being valid or invalid
+ */
 export const validateEntireForm = formValidation => {
   const isFormInvalid = Object.keys(formValidation)
     .map(inputName => {
@@ -81,4 +86,30 @@ export const validateEntireForm = formValidation => {
     .includes(false);
 
   return !isFormInvalid;
+};
+
+/**
+ *
+ * @param {Object} inputValidationValues - Object with nested objects containg true/false values
+ * @return Objet with only child objects with false values
+ */
+export const findFailedInputs = inputValidationValues => {
+  const failedInputs = Object.keys(inputValidationValues).reduce(
+    (acc, currInputName) => {
+      let failedValidationsOnInput = Object.entries(
+        inputValidationValues[currInputName]
+      ).reduce((acc, curr, i) => {
+        if (curr[1] === false) {
+          acc[curr[0]] = false;
+        }
+        return acc;
+      }, {});
+      if (Object.keys(failedValidationsOnInput).length > 0) {
+        acc[currInputName] = failedValidationsOnInput;
+      }
+      return acc;
+    },
+    {}
+  );
+  return failedInputs;
 };

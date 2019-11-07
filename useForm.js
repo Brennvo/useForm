@@ -1,60 +1,71 @@
-import { useReducer } from "react"
+import { useReducer } from "react";
 import {
   validateEntireForm,
   validateInput,
   emptyObjectWithKeys,
-} from "./helpers"
+  findFailedInputs
+} from "./recursiveHelperSolution";
 
 const reducer = (state, action) => {
   switch (action.type) {
+    case "FORM_SUBMISSION":
+      return {
+        ...state,
+        isFormSubmitted: true
+      };
     case "INPUT_CHANGE":
+      const validatedIncomingInput = {
+        ...validateInput(
+          action.input,
+          action.inputValidationRules,
+          { ...state.formValues, [action.input.name]: action.input.value },
+          { ...state.formValidation }
+        )
+      };
       return {
         ...state,
         formValues: {
           ...state.formValues,
-          [action.input.name]: action.input.value,
+          [action.input.name]: action.input.value
         },
         formValidation: {
           ...state.formValidation,
-          [action.input.name]: validateInput(
-            action.input,
-            action.inputValidationRules,
-            { ...state.formValues, [action.input.name]: action.input.value },
-            true
-          ),
+          ...validatedIncomingInput
         },
-        isFormValid: validateEntireForm(state.formValidation),
-      }
+        isFormValid: validateEntireForm({
+          ...state.formValidation,
+          ...validatedIncomingInput
+        }),
+        isFormSubmitted: false
+      };
   }
-}
+};
 
-export const useForm2 = (
+export const useForm = (
   initialFormValues = {},
   formValidationRules = emptyObjectWithKeys(initialFormValues)
 ) => {
-  const [{ formValues, formValidation, isFormValid }, dispatch] = useReducer(
-    reducer,
-    {
-      formValues: initialFormValues,
-      formValidation: Object.keys(formValidationRules).reduce(
-        (acc, currKey) => {
-          acc[currKey] = emptyObjectWithKeys(formValidationRules[currKey])
-          return acc
-        },
-        {}
-      ),
-      isFormInvalid: false,
-    }
-  )
+  const [
+    { formValues, formValidation, isFormValid, isFormSubmitted },
+    dispatch
+  ] = useReducer(reducer, {
+    formValues: initialFormValues,
+    formValidation: Object.keys(formValidationRules).reduce((acc, currKey) => {
+      acc[currKey] = emptyObjectWithKeys(formValidationRules[currKey]);
+      return acc;
+    }, {}),
+    isFormInvalid: false,
+    isFormSubmitted: false
+  });
 
   const handleInputChange = e => {
-    e.persist()
+    e.persist();
     dispatch({
       type: "INPUT_CHANGE",
       input: { name: e.target.name, value: e.target.value },
-      inputValidationRules: formValidationRules[e.target.name],
-    })
-  }
+      inputValidationRules: formValidationRules[e.target.name]
+    });
+  };
 
   /**
    *
@@ -63,10 +74,10 @@ export const useForm2 = (
    */
   const mapKeysToValues = values => {
     return values.reduce((acc, curr, i) => {
-      acc[curr] = formValues[curr]
-      return acc
-    }, {})
-  }
+      acc[curr] = formValues[curr];
+      return acc;
+    }, {});
+  };
 
   /**
    *
@@ -78,20 +89,21 @@ export const useForm2 = (
     failedFormSubmission,
     formValueKeys = Object.keys(formValues)
   ) => e => {
-    e.preventDefault()
-    //valideFormWithRules(formValues)
+    e.preventDefault();
+    dispatch({ type: "FORM_SUBMISSION" });
     if (!isFormValid) {
-      failedFormSubmission(formValidation)
+      failedFormSubmission(findFailedInputs(formValidation));
     } else {
-      validFormSubmission(mapKeysToValues(formValueKeys))
+      validFormSubmission(mapKeysToValues(formValueKeys));
     }
-  }
+  };
 
   return {
     formValues,
     formValidation,
     isFormValid,
+    isFormSubmitted,
     handleInputChange,
-    handleFormSubmit,
-  }
-}
+    handleFormSubmit
+  };
+};
